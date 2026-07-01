@@ -9,7 +9,7 @@ Challenge:
 
 const tweetInput = document.getElementById('tweet-input')
 const handleName = document.getElementById('handle-input')
-const savedTweets = JSON.parse(localStorage.getItem("tweetsArray"))
+const savedTweets = JSON.parse(localStorage.getItem("tweetsArray")) || []
 if(savedTweets.length > 0){
     tweetsData.length = 0 
     tweetsData.push(...savedTweets)
