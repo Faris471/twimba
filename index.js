@@ -1,21 +1,18 @@
 import { tweetsData } from './data.js'
 import { v4 as uuidv4 } from 'https://jspm.dev/uuid';
 
-/*
-Challenge:
-3. We could improve index.js by moving one line
-   of code to a better position. Find it and move it!
-*/
-
 const tweetInput = document.getElementById('tweet-input')
 const handleName = document.getElementById('handle-input')
+
 const savedTweets = JSON.parse(localStorage.getItem("tweetsArray")) || []
+
 if(savedTweets.length > 0){
     tweetsData.length = 0 
     tweetsData.push(...savedTweets)
     console.log(tweetsData)
 }
 
+//document EventListener
 document.addEventListener('click', function(e){
     if(e.target.dataset.like){
        handleLikeClick(e.target.dataset.like) 
@@ -37,22 +34,33 @@ document.addEventListener('click', function(e){
     }
 })
 
-function handleTrashClick(tweetId){
-    const index = tweetsData.findIndex(tweet => tweet.uuid === tweetId)
-    tweetsData.splice(index, 1)
-    render()
+//constructor
+function NewTweet (){
+    this.handle = `@${handleName.value}`
+    this.profilePic = `images/scrimbalogo.png`
+    this.likes = 0
+    this.retweets = 0
+    this.tweetText = tweetInput.value
+    this.replies = []
+    this.isLiked = false
+    this.isRetweeted = false
+    this.commentsHidden = true
+    this.uuid = uuidv4()
 }
 
+/*
+tweetButtons handlers 
+*/
+
+//comment adding process
 function handleCommentClick(tweetId){
-    const targetTweetObj = tweetsData.filter(function(tweet){
-        return `${tweet.uuid}` === tweetId
-    })[0]
+    const targetTweetObj = getTragetObj (tweetId)
 
     const replyInput = document.querySelector(`[data-id="${targetTweetObj.uuid}"]`)
 
     if(replyInput.value&&handleName.value){
         let replyObj = {
-                handle: handleName.value,
+                handle: `@${handleName.value}`,
                 profilePic: `images/scrimbalogo.png`,
                 tweetText: replyInput.value,
             }
@@ -60,11 +68,18 @@ function handleCommentClick(tweetId){
     }
     render()
 }
- 
+
+//reply section toggle
+function handleReplyClick(replyId){
+    console.log(replyId)
+    const targetTweetObj = getTragetObj (replyId)
+    targetTweetObj.commentsHidden = !targetTweetObj.commentsHidden
+    document.getElementById(`replies-${replyId}`).classList.toggle('hidden')
+}
+
+//like dislike handler
 function handleLikeClick(tweetId){ 
-    const targetTweetObj = tweetsData.filter(function(tweet){
-        return tweet.uuid === tweetId
-    })[0]
+    const targetTweetObj = getTragetObj (tweetId)
 
     if (targetTweetObj.isLiked){
         targetTweetObj.likes--
@@ -75,11 +90,10 @@ function handleLikeClick(tweetId){
     targetTweetObj.isLiked = !targetTweetObj.isLiked
     render()
 }
-
+ 
+//retweet handler
 function handleRetweetClick(tweetId){
-    const targetTweetObj = tweetsData.filter(function(tweet){
-        return tweet.uuid === tweetId
-    })[0]
+    const targetTweetObj = getTragetObj (tweetId)
     
     if(targetTweetObj.isRetweeted){
         targetTweetObj.retweets--
@@ -91,37 +105,28 @@ function handleRetweetClick(tweetId){
     render() 
 }
 
-function handleReplyClick(replyId){
-    const targetTweetObj = tweetsData.find(function(tweet){
-        return `${tweet.uuid}` === replyId
-    })
-    targetTweetObj.commentsHidden = !targetTweetObj.commentsHidden
-    document.getElementById(`replies-${replyId}`).classList.toggle('hidden')
-    
-
-}
-
+//new tweet handler
 function handleTweetBtnClick(){
-
-    if(tweetInput.value&&handleName.value){
-        tweetsData.unshift({
-            handle: handleName.value,
-            profilePic: `images/scrimbalogo.png`,
-            likes: 0,
-            retweets: 0,
-            tweetText: tweetInput.value,
-            replies: [],
-            isLiked: false,
-            isRetweeted: false,
-            commentsHidden: true,
-            uuid: uuidv4()
-        })
+    if( tweetInput.value && handleName.value ){
+        tweetsData.unshift(new NewTweet())
      render()
     tweetInput.value = ''
     }
 
 }
 
+//delete tweet handler
+function handleTrashClick(tweetId){
+    const index = tweetsData.findIndex(tweet => tweet.uuid === tweetId)
+    tweetsData.splice(index, 1)
+    render()
+}
+
+/* 
+rendering section
+*/
+
+//tweets obj to template string function
 function getFeedHtml(){
     let feedHtml = ``
     
@@ -151,20 +156,19 @@ function getFeedHtml(){
         if(tweet.replies.length > 0){
             tweet.replies.forEach(function(reply){
                 repliesHtml+=`
-<div class="tweet-reply">
-    <div class="tweet-inner">
-        <img src="${reply.profilePic}" class="profile-pic">
-            <div>
-                <p class="handle">${reply.handle}</p>
-                <p class="tweet-text">${reply.tweetText}</p>
-            </div>
-        </div>
-</div>
-`
+                            <div class="tweet-reply">
+                                <div class="tweet-inner">
+                                    <img src="${reply.profilePic}" class="profile-pic">
+                                        <div>
+                                            <p class="handle">${reply.handle}</p>
+                                            <p class="tweet-text">${reply.tweetText}</p>
+                                        </div>
+                                </div>
+                            </div>
+                            `
             })
         }
-        
-        // try to change the hidden clase for the replies so we dont need the renderReplies() function  
+          
         feedHtml += `
             <div class="tweet">
                 <div class="tweet-inner">
@@ -216,9 +220,15 @@ function getFeedHtml(){
    return feedHtml 
 }
 
+//tweets render function
 function render(){
     localStorage.setItem("tweetsArray",JSON.stringify(tweetsData))
     document.getElementById('feed').innerHTML = getFeedHtml()
+}
+
+//getter function
+function getTragetObj (tweetId){
+    return tweetsData.find(tweet => tweet.uuid === tweetId)
 }
 
 render()
